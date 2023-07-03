@@ -65,22 +65,9 @@ function Map({
         const savedPoints = localStorage.getItem('points');
         if (savedPoints) {
             const parsedPoints: Point[] = JSON.parse(savedPoints);
-            if (parsedPoints.length > 0) {
-                const lastSelectedPoint = parsedPoints.find((point) => point.id === selectedPoint?.id);
-                setSelectedPoint(lastSelectedPoint || null);
-                if (lastSelectedPoint) {
-                    setSelectedPointObjects(lastSelectedPoint.objects);
-                }
-            }
             setLocalPoints(parsedPoints);
-        }
-    }, []);
-
-    useEffect(() => {
-        const savedPoints = localStorage.getItem('points');
-        if (savedPoints) {
-            const parsedPoints: Point[] = JSON.parse(savedPoints);
-            setLocalPoints(parsedPoints);
+        } else {
+            setLocalPoints([]);
         }
     }, []);
 
