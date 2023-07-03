@@ -77,7 +77,16 @@ function Map({
     }, []);
 
     useEffect(() => {
+        const savedPoints = localStorage.getItem('points');
+        if (savedPoints) {
+            const parsedPoints: Point[] = JSON.parse(savedPoints);
+            setLocalPoints(parsedPoints);
+        }
+    }, []);
+
+    useEffect(() => {
         setLocalPoints(points);
+        localStorage.setItem('points', JSON.stringify(points));
     }, [points]);
 
     useEffect(() => {
@@ -136,6 +145,7 @@ function Map({
             };
             setSelectedPoint(updatedPoint);
             onPointEdit(updatedPoint);
+            updateLocalPoints(updatedPoint);
         }
     };
 
@@ -143,6 +153,7 @@ function Map({
         if (selectedPoint) {
             onPointDelete(selectedPoint.id);
             setSelectedPoint(null);
+            removeLocalPoint(selectedPoint.id);
         }
     };
 
@@ -155,6 +166,7 @@ function Map({
             onObjectAdd(selectedPoint.id, newObjectName);
             setSelectedPointObjects([...selectedPoint.objects, newObjectName]);
             setNewObjectName('');
+            updateLocalPoints({ ...selectedPoint, objects: [...selectedPoint.objects, newObjectName] });
         }
     };
 
@@ -168,30 +180,43 @@ function Map({
             setSelectedPoint(updatedPoint);
             onObjectDelete(selectedPoint.id, objectName);
             onPointEdit(updatedPoint);
+            updateLocalPoints(updatedPoint);
             setSelectedObjectName(null);
         }
     };
 
     const handleObjectUpdate = (objectName: string, newData: string) => {
         if (selectedPoint) {
-            const updatedPoints = localPoints.map((point) => {
-                if (point.id === selectedPoint.id) {
-                    const updatedObjects = point.objects.map((object) =>
-                        object === objectName ? newData : object
-                    );
-                    return {
-                        ...point,
-                        objects: updatedObjects,
-                    };
-                }
-                return point;
-            });
-
-            setLocalPoints(updatedPoints);
+            const updatedObjects = selectedPoint.objects.map((object) =>
+                object === objectName ? newData : object
+            );
+            const updatedPoint: Point = {
+                ...selectedPoint,
+                objects: updatedObjects,
+            };
+            setSelectedPoint(updatedPoint);
             onObjectUpdate(selectedPoint.id, objectName, newData);
-            onPointEdit(selectedPoint);
+            onPointEdit(updatedPoint);
+            updateLocalPoints(updatedPoint);
             setSelectedObjectName(null);
         }
+    };
+
+    const updateLocalPoints = (updatedPoint: Point) => {
+        const updatedPoints = localPoints.map((point) => {
+            if (point.id === updatedPoint.id) {
+                return updatedPoint;
+            }
+            return point;
+        });
+        setLocalPoints(updatedPoints);
+        localStorage.setItem('points', JSON.stringify(updatedPoints));
+    };
+
+    const removeLocalPoint = (pointId: string) => {
+        const updatedPoints = localPoints.filter((point) => point.id !== pointId);
+        setLocalPoints(updatedPoints);
+        localStorage.setItem('points', JSON.stringify(updatedPoints));
     };
 
     if (!isLoaded) {
@@ -201,7 +226,7 @@ function Map({
     return (
         <div className="map">
             <GoogleMap mapContainerStyle={containerStyle} center={center} zoom={10} onClick={handleMapClick}>
-                {points.map((point) => (
+                {localPoints.map((point) => (
                     <Marker
                         key={point.id}
                         position={{ lat: point.lat, lng: point.lng }}
